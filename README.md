@@ -11,24 +11,21 @@ Proyecto de **Single Page Application** estilo Tamagotchi retro (GameBoy) realiz
 - Formulario de adopción
 - Pantalla principal con 3 barras de progreso (hambre, energía, felicidad)
 - Sistema completo de interacción (alimentar, jugar, dormir)
-- Game Loop automático
+- Game Loop automático con reducción de estadísticas
 - Persistencia con localStorage
 - Pantalla de Game Over
 
-## Ampliaciones implementadas
-- ✅ A) Mascota en movimiento constante
-- ✅ B) Selector de 3 tipos de alienígenas
-- ✅ C) Minijuego al pulsar "Jugar"
-
-*(Cambia los ✅ por los que realmente tengas y borra los que no hiciste)*
+## Ampliaciones implementadas (Sprint 4)
+- ✅ **A)** Mascota cambia de aspecto según estado y estadísticas
+- ❌ **B)** Selector de 3 tipos de alienígenas diferentes
+- ✅ **C)** Minijuego (Piedra, Papel o Tijeras) al pulsar el botón "Jugar"
 
 ## Enlaces
-- **Jugar online**: [https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/](https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/)
+- **🎮 Jugar online**: [https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/](https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/)
 - **Repositorio GitHub**: [https://github.com/donrrreguera/aliengotchi-rubenreguerajimenez](https://github.com/donrrreguera/aliengotchi-rubenreguerajimenez)
-- **Tablero Kanban**: [Enlace de tu Trello o GitHub Projects]
 
-## Metodología
-- 4 Sprints de 10 horas
-- Tablero Kanban
+## Metodología de trabajo
+- 4 Sprints de 10 horas cada uno
+- Tablero Kanban (Trello)
 - Git Flow con Feature Branches + Conventional Commits
 - Clean Code
