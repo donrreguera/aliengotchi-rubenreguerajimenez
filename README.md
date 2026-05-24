@@ -26,6 +26,6 @@ Proyecto de **Single Page Application** estilo Tamagotchi retro (GameBoy) realiz
 
 ## Metodología de trabajo
 - 4 Sprints de 10 horas cada uno
-- Tablero Kanban (Trello)
+- - **Tablero Kanban**: [Ver en Trello](https://trello.com/b/6a02d47acd1e6bd38cf0090a/aliengotchi-rubenreguerajimenez)
 - Git Flow con Feature Branches + Conventional Commits
 - Clean Code
