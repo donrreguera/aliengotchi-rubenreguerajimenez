@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aliengotchi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f0f1e;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            gap: 15px;
+            padding: 15px 10px;
+        }
+
+        /* LEADERBOARD */
+        #leaderboard-sidebar {
+            width: 100%;
+            max-width: 420px;
+            background: #1a252f;
+            border: 12px solid #9bbc0f;
+            border-radius: 20px;
+            padding: 20px;
+            color: #9bbc0f;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            display: none;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        #leaderboard-sidebar h2 { text-align: center; margin-bottom: 15px; font-size: 22px; text-shadow: 3px 3px 0 #0f380f; }
+        .leaderboard-entry { display: flex; justify-content: space-between; background: #0f380f; margin-bottom: 8px; padding: 8px 12px; border-radius: 6px; border: 3px solid #9bbc0f; }
+        .leaderboard-entry .rank { font-weight: bold; color: #ffcc00; width: 30px; }
+        .leaderboard-entry .player { flex: 1; }
+        .leaderboard-entry .time { font-size: 14px; color: #9bbc0f; text-align: right; }
+
+        /* CONTENEDOR CENTRAL */
+        .main-container {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .gameboy {
+            width: 100%;
+            background: linear-gradient(#2c3e50, #1f2a3c);
+            border-radius: 45px;
+            padding: 25px 22px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            border: 14px solid #111;
+        }
+
+        .header h1 { color: #9bbc0f; font-size: 34px; text-align: center; text-shadow: 5px 5px 0 #0f380f; letter-spacing: 3px; margin-bottom: 10px; }
+        .screen { background: #0f380f; border: 12px solid #1a252f; border-radius: 15px; padding: 22px; min-height: 390px; color: #9bbc0f; box-shadow: inset 0 0 30px rgba(0,0,0,0.85); text-align: center; position: relative; overflow: hidden; }
+        .screen-container { display: none; }
+        .screen-container.active { display: block; }
+
+        .nav-bar { background: #1a252f; border: 4px solid #9bbc0f; border-radius: 12px; padding: 8px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+        .nav-bar button { background: #9bbc0f; color: #0f380f; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        .auth-form { display: flex; flex-direction: column; gap: 20px; max-width: 280px; margin: 0 auto; }
+        .auth-form input { padding: 16px 20px; font-size: 20px; background: #0f380f; border: 6px solid #9bbc0f; color: #9bbc0f; text-align: center; border-radius: 8px; }
+        .auth-form button { background: #9bbc0f; color: #0f380f; border: 6px solid #0f380f; padding: 16px; font-size: 22px; font-weight: bold; cursor: pointer; border-radius: 8px; }
+
+        .pet-card { background: #1a252f; border: 4px solid #9bbc0f; border-radius: 12px; padding: 12px; margin: 10px 0; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.2s; }
+        .pet-card.dead { background: #3a1f1f; border-color: #ff3333; opacity: 0.85; }
+        .pet-card.dead strong { color: #ff6666; }
+        .pet-card img { width: 60px; height: 60px; image-rendering: pixelated; }
+
+        .pet-sprite { width: 130px; height: 130px; image-rendering: pixelated; display: block; margin: 20px auto 15px; animation: sprite-bounce 1.7s infinite alternate ease-in-out; }
+        @keyframes sprite-bounce { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+
+        .stats { margin-top: 10px; }
+        .stat { margin-bottom: 20px; }
+        .stat span { display: block; margin-bottom: 7px; font-weight: bold; font-size: 16px; }
+        progress { width: 100%; height: 30px; border: 5px solid #9bbc0f; background: #0f380f; accent-color: #00aaff; }
+
+        .buttons { display: flex; justify-content: center; gap: 25px; margin-top: 25px; }
+        .buttons button { background: transparent; border: none; padding: 0; width: 64px; height: 64px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+        .buttons button:hover { transform: scale(1.15); }
+        .buttons button img { width: 48px; height: 48px; image-rendering: pixelated; object-fit: contain; }
+
+        .sleep-overlay, .dead-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; align-items: center; justify-content: center; border-radius: 15px; }
+        .sleep-overlay.active, .dead-overlay.active { display: flex; }
+        .sleep-overlay { background: rgba(10,20,30,0.88); z-index: 20; }
+        .dead-overlay { background: rgba(180,20,20,0.85); z-index: 30; flex-direction: column; color: #ffdddd; font-size: 28px; font-weight: bold; text-shadow: 3px 3px 0 #000; }
+
+        .zzz { color: #9bbc0f; font-size: 42px; font-weight: bold; text-shadow: 0 0 15px #9bbc0f; animation: zzz-float 2s infinite ease-in-out; }
+        @keyframes zzz-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: #0f380f; border: 12px solid #9bbc0f; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 0 40px #9bbc0f; width: 95%; max-width: 640px; }
+
+        .pet-level-time { color:#9bbc0f; font-size:15px; margin-bottom:15px; font-weight:bold; }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media (min-width: 920px) {
+            body { flex-direction: row; align-items: flex-start; gap: 30px; padding: 30px 20px; }
+            #leaderboard-sidebar { width: 320px; max-width: 320px; }
+            .main-container { flex: 1; max-width: none; }
+        }
+
+        @media (max-width: 480px) {
+            .gameboy { padding: 18px 16px; border-radius: 35px; border-width: 11px; }
+            .screen { padding: 16px; min-height: 355px; border-width: 9px; }
+            .header h1 { font-size: 28px; }
+            .pet-sprite { width: 115px; height: 115px; }
+            .buttons { gap: 20px; margin-top: 20px; }
+            .buttons button { width: 60px; height: 60px; }
+            .buttons button img { width: 42px; height: 42px; }
+        }
+
+        @media (max-width: 360px) {
+            .gameboy { padding: 15px 12px; }
+            .pet-sprite { width: 98px; height: 98px; }
+            .nav-bar { padding: 6px 10px; font-size: 13px; }
+        }
+
+        #pong-canvas {
+            width: 100% !important;
+            max-height: 65vh;
+            image-rendering: pixelated;
+            border: 10px solid #9bbc0f;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- LEADERBOARD LATERAL -->
+    <div id="leaderboard-sidebar">
+        <h2>🏆 TOP JUGADORES</h2>
+        <div id="leaderboard-list"></div>
+    </div>
+
+    <!-- CONTENEDOR CENTRAL -->
+    <div class="main-container">
+        <!-- LOGIN -->
+        <div id="login-screen" class="screen-container active">
+            <div class="gameboy">
+                <div class="header"><h1>ALIENGOTCHI</h1></div>
+                <div class="screen">
+                    <h2 style="margin:40px 0 30px">Iniciar Sesión</h2>
+                    <div class="auth-form">
+                        <input type="text" id="login-user" placeholder="Usuario" required>
+                        <input type="password" id="login-pass" placeholder="Contraseña" required>
+                        <button onclick="login()">Iniciar Sesión</button>
+                        <p style="color:#9bbc0f; cursor:pointer; margin-top:10px" onclick="showRegister()">¿No tienes cuenta? Regístrate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REGISTER -->
+        <div id="register-screen" class="screen-container">
+            <div class="gameboy">
+                <div class="header"><h1>ALIENGOTCHI</h1></div>
+                <div class="screen">
+                    <h2 style="margin:40px 0 30px">Crear Cuenta</h2>
+                    <div class="auth-form">
+                        <input type="text" id="reg-user" placeholder="Usuario" required>
+                        <input type="password" id="reg-pass" placeholder="Contraseña" required>
+                        <button onclick="register()">Registrarse</button>
+                        <p style="color:#9bbc0f; cursor:pointer; margin-top:10px" onclick="showLogin()">¿Ya tienes cuenta? Inicia sesión</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MENÚ -->
+        <div id="menu-screen" class="screen-container">
+            <div class="gameboy">
+                <div class="header"><h1>ALIENGOTCHI</h1></div>
+                <div class="nav-bar">
+                    <button onclick="logout()">Cerrar Sesión</button>
+                </div>
+                <div class="screen">
+                    <h2 id="menu-username" style="margin-bottom:20px">Mis Tamagotchis</h2>
+                    <div id="pets-list" style="max-height:280px; overflow-y:auto;"></div>
+                    <div class="menu-buttons" style="display:flex; gap:10px; margin-top:15px;">
+                        <button onclick="createNewPet()" style="flex:1; padding:15px; font-size:18px;">Crear Nuevo Alien</button>
+                        <button onclick="deleteAllPets()" style="flex:1; padding:15px; font-size:18px; background:#9bbc0f; color:#0f380f;">Eliminar Todos</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADOPCIÓN -->
+        <div id="adoption-screen" class="screen-container">
+            <div class="gameboy">
+                <div class="header"><h1>ALIENGOTCHI</h1></div>
+                <div class="screen">
+                    <h2>¡Adopta tu alien!</h2>
+                    <form id="adoption-form" class="auth-form">
+                        <input type="text" id="alien-name" placeholder="Nombre de tu alien" required>
+                        <button type="submit">¡Adoptar!</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- JUEGO -->
+        <div id="game-screen" class="screen-container">
+            <div class="gameboy">
+                <div class="header"><h1>ALIENGOTCHI</h1></div>
+                <div class="nav-bar">
+                    <button onclick="backToMenu()">← Volver al Menú</button>
+                    <button onclick="logout()">Cerrar Sesión</button>
+                </div>
+                <div class="screen">
+                    <h2 id="pet-name" style="margin-bottom:5px;">Mi Alien</h2>
+                    <div id="pet-level-time" class="pet-level-time">
+                        Nivel <span id="display-nivel">0</span> • <span id="display-tiempo">00m 00s</span>
+                    </div>
+                    <img id="pet-sprite" src="assets/sprites/alien-idle.png" alt="Alien" class="pet-sprite">
+                    <div id="stats-container" class="stats">
+                        <div class="stat"><span>Hambre</span><progress id="hunger-bar" value="80" max="100"></progress><span id="hunger-text">80%</span></div>
+                        <div class="stat"><span>Energía</span><progress id="energy-bar" value="80" max="100"></progress><span id="energy-text">80%</span></div>
+                        <div class="stat"><span>Felicidad</span><progress id="happiness-bar" value="80" max="100"></progress><span id="happiness-text">80%</span></div>
+                    </div>
+                    <div class="buttons">
+                        <button id="feed-btn" draggable="true"><img src="assets/sprites/icon-porkchop.png" alt="Alimentar"></button>
+                        <button id="play-btn"><img src="assets/sprites/icon-controller.png" alt="Jugar"></button>
+                        <button id="sleep-btn"><img src="assets/sprites/icon-lamp.png" alt="Dormir"></button>
+                    </div>
+                    <div id="sleep-overlay" class="sleep-overlay"><div class="zzz">Zzz Zzz Zzz</div></div>
+                    <div id="dead-overlay" class="dead-overlay">
+                        <div style="font-size:42px; margin-bottom:15px;">💀</div>
+                        <div>ALIEN MUERTO</div>
+                        <div style="font-size:18px; margin-top:20px; opacity:0.9;">Ya no se puede revivir</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pong -->
+    <div id="pong-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="modal-title" style="margin-bottom:10px;">¡PONG RETRO!</h2>
+            <canvas id="pong-canvas"></canvas>
+            <div class="pong-info" style="margin-top:10px;"><span id="pong-hits">Golpes: 0</span></div>
+        </div>
+    </div>
+
+    <!-- CONTROLES DE MÚSICA -->
+    <div id="music-controls" style="display:none; position:fixed; bottom:25px; right:25px; background:#1a252f; border:5px solid #9bbc0f; border-radius:15px; padding:10px 15px; z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.7); align-items:center; gap:12px; font-size:28px;">
+        <button id="mute-btn" style="background:none;border:none;color:#9bbc0f;cursor:pointer;padding:0;">🔊</button>
+        <button id="vol-down-btn" style="background:none;border:none;color:#9bbc0f;cursor:pointer;padding:0;">🔉</button>
+        <button id="vol-up-btn" style="background:none;border:none;color:#9bbc0f;cursor:pointer;padding:0;">🔊</button>
+    </div>
+
+    <script>
+        // === TODO TU JAVASCRIPT ORIGINAL SIN CAMBIOS (solo añadí el escalado del Pong) ===
+        const SECRET_KEY = "AliengotchiSecret2026Ruben";
+        function encrypt(text) { let result = ''; for (let i = 0; i < text.length; i++) { result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length)); } return btoa(result); }
+        function decrypt(encoded) { const text = atob(encoded); let result = ''; for (let i = 0; i < text.length; i++) { result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length)); } return result; }
+
+        let currentUser = null;
+        let currentPet = null;
+        let mascota = { nombre: "", hambre: 80, energia: 80, felicidad: 80, muerto: false, tiempo: 0 };
+        let playTimer = null;
+        let statsPaused = false;
+
+        // ====================== MÚSICA ======================
+        let music1 = null, music2 = null, currentVolume = 0.65, isMuted = false;
+        function initMusic() {
+            if (music1) return;
+            music1 = new Audio('assets/music/music1.mp3');
+            music2 = new Audio('assets/music/music2.mp3');
+            music1.loop = music2.loop = true;
+            music1.volume = music2.volume = currentVolume;
+        }
+        function playMusic1() { initMusic(); if (music2) music2.pause(); if (music1) music1.play().catch(() => {}); }
+        function playMusic2() { initMusic(); if (music1) music1.pause(); if (music2) music2.play().catch(() => {}); }
+        function stopAllMusic() { if (music1) music1.pause(); if (music2) music2.pause(); }
+        function setVolume(vol) {
+            currentVolume = Math.max(0, Math.min(1, vol));
+            const v = isMuted ? 0 : currentVolume;
+            if (music1) music1.volume = v; if (music2) music2.volume = v;
+        }
+        function toggleMute() {
+            isMuted = !isMuted;
+            const vol = isMuted ? 0 : currentVolume;
+            if (music1) music1.volume = vol; if (music2) music2.volume = vol;
+            document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+        }
+        function setupMusicControls() {
+            document.getElementById('mute-btn').addEventListener('click', toggleMute);
+            document.getElementById('vol-down-btn').addEventListener('click', () => setVolume(currentVolume - 0.15));
+            document.getElementById('vol-up-btn').addEventListener('click', () => setVolume(currentVolume + 0.15));
+        }
+        function startMusicOnLogin() {
+            playMusic1();
+            document.getElementById('music-controls').style.display = 'flex';
+            setupMusicControls();
+        }
+
+        // ====================== NIVEL Y TIEMPO ======================
+        function calcularNivel(t) { t = t || 0; if (t < 30) return 0; let n=1, u=30; while (t >= u) { n++; u = u < 3600 ? u*2 : u+3600; } return n-1; }
+        function formatTime(t) {
+            t = t || 0;
+            const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60;
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m ${s<10?'0':''}${s}s`;
+        }
+        function actualizarInfoPet() {
+            document.getElementById('display-nivel').textContent = calcularNivel(mascota.tiempo);
+            document.getElementById('display-tiempo').textContent = formatTime(mascota.tiempo);
+        }
+        function startPlayTimer() {
+            if (playTimer) clearInterval(playTimer);
+            playTimer = setInterval(() => { if (!mascota.muerto) { mascota.tiempo++; actualizarInfoPet(); } }, 1000);
+        }
+        function stopPlayTimer() { if (playTimer) clearInterval(playTimer); playTimer = null; }
+
+        function isDead(pet) { return pet.muerto === true; }
+        function showScreen(id) {
+            document.querySelectorAll('.screen-container').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        function showLogin() { showScreen('login-screen'); }
+        function showRegister() { showScreen('register-screen'); }
+
+        function login() {
+            const username = document.getElementById('login-user').value.trim();
+            const password = document.getElementById('login-pass').value.trim();
+            const users = loadUsers();
+            const user = users.find(u => u.username === username && u.password === password);
+            if (user) { currentUser = user; startMusicOnLogin(); showMenu(); }
+            else alert("Usuario o contraseña incorrectos");
+        }
+        function register() {
+            const username = document.getElementById('reg-user').value.trim();
+            const password = document.getElementById('reg-pass').value.trim();
+            let users = loadUsers();
+            if (users.find(u => u.username === username)) return alert("Ese usuario ya existe");
+            const newUser = { username, password, pets: [] };
+            users.push(newUser);
+            saveUsers(users);
+            currentUser = newUser;
+            alert("¡Cuenta creada correctamente!");
+            startMusicOnLogin();
+            showMenu();
+        }
+
+        function loadUsers() {
+            const encrypted = localStorage.getItem('users');
+            if (!encrypted) return [];
+            try { return JSON.parse(decrypt(encrypted)); } catch(e) { return []; }
+        }
+        function saveUsers(users) {
+            localStorage.setItem('users', encrypt(JSON.stringify(users)));
+        }
+
+        // ====================== LEADERBOARD ======================
+        function updateLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            const users = loadUsers();
+            let allPets = [];
+            users.forEach(user => {
+                if (user.pets) user.pets.forEach(pet => {
+                    allPets.push({ username: user.username, nombre: pet.nombre, tiempo: pet.tiempo || 0 });
+                });
+            });
+            allPets.sort((a, b) => b.tiempo - a.tiempo);
+            let html = '';
+            allPets.slice(0, 5).forEach((pet, i) => {
+                html += `<div class="leaderboard-entry"><span class="rank">#${i+1}</span><span class="player">${pet.username} - ${pet.nombre}</span><span class="time">${formatTime(pet.tiempo)}</span></div>`;
+            });
+            container.innerHTML = html || '<p style="text-align:center;color:#666;">Todavía no hay aliens...</p>';
+        }
+
+        function showMenu() {
+            stopPlayTimer();
+            currentPet = null;
+            showScreen('menu-screen');
+            document.getElementById('menu-username').textContent = `Hola, ${currentUser.username}`;
+            document.getElementById('leaderboard-sidebar').style.display = 'flex';
+            updateLeaderboard();
+            const container = document.getElementById('pets-list');
+            container.innerHTML = currentUser.pets.length === 0
+                ? `<p style="color:#9bbc0f;padding:30px">Aún no tienes aliens.<br>¡Crea uno!</p>`
+                : '';
+            currentUser.pets.forEach((pet, i) => {
+                const div = document.createElement('div');
+                div.className = `pet-card ${isDead(pet) ? 'dead' : ''}`;
+                const tiempo = pet.tiempo || 0;
+                const nivel = calcularNivel(tiempo);
+                const status = isDead(pet) ? `<span style="color:#ff6666;font-size:18px;">💀 MUERTO</span>` : '';
+                div.innerHTML = `
+                    <img src="assets/sprites/alien-idle.png">
+                    <div style="flex:1;text-align:left">
+                        <strong>${pet.nombre}</strong><br>
+                        <small>Nivel ${nivel} • ${formatTime(tiempo)}</small><br>
+                        <small>H: ${Math.round(pet.hambre)}% | E: ${Math.round(pet.energia)}% | F: ${Math.round(pet.felicidad)}%</small>
+                        ${status}
+                    </div>
+                `;
+                if (!isDead(pet)) div.onclick = () => { currentPet = currentUser.pets[i]; showGame(); };
+                else div.onclick = () => alert("💀 Este alien ha muerto y ya no se puede revivir.");
+                container.appendChild(div);
+            });
+        }
+
+        function createNewPet() {
+            mascota = { nombre: "", hambre: 80, energia: 80, felicidad: 80, muerto: false, tiempo: 0 };
+            document.getElementById('alien-name').value = '';
+            showScreen('adoption-screen');
+        }
+        function deleteAllPets() {
+            if (confirm("¿Eliminar TODOS tus aliens? Esta acción no se puede deshacer.")) {
+                currentUser.pets = [];
+                saveUsers(loadUsers());
+                showMenu();
+            }
+        }
+
+        function showGame() {
+            showScreen('game-screen');
+            document.getElementById('pet-name').textContent = currentPet.nombre;
+            document.getElementById('leaderboard-sidebar').style.display = 'flex';
+            updateLeaderboard();
+            mascota = { ...currentPet, tiempo: Number(currentPet.tiempo) || 0 };
+            const deadOverlay = document.getElementById('dead-overlay');
+            const statsContainer = document.getElementById('stats-container');
+            const buttons = document.querySelector('.buttons');
+            if (mascota.muerto) {
+                deadOverlay.classList.add('active');
+                statsContainer.classList.add('dead-stats');
+                buttons.style.display = 'none';
+                document.getElementById('pet-sprite').src = "assets/sprites/alien-sad.png";
+            } else {
+                deadOverlay.classList.remove('active');
+                statsContainer.classList.remove('dead-stats');
+                buttons.style.display = 'flex';
+            }
+            actualizarBarras();
+            actualizarSprite();
+            actualizarInfoPet();
+            startPlayTimer();
+        }
+
+        function backToMenu() {
+            stopPlayTimer();
+            if (currentPet) {
+                currentPet.hambre = Math.round(mascota.hambre);
+                currentPet.energia = Math.round(mascota.energia);
+                currentPet.felicidad = Math.round(mascota.felicidad);
+                currentPet.muerto = mascota.muerto;
+                currentPet.tiempo = mascota.tiempo;
+                const users = loadUsers();
+                const index = users.findIndex(u => u.username === currentUser.username);
+                if (index !== -1) users[index] = currentUser;
+                saveUsers(users);
+            }
+            showMenu();
+        }
+
+        function logout() {
+            if (confirm("¿Cerrar sesión?")) {
+                stopPlayTimer();
+                stopAllMusic();
+                document.getElementById('music-controls').style.display = 'none';
+                document.getElementById('leaderboard-sidebar').style.display = 'none';
+                currentUser = null;
+                currentPet = null;
+                showScreen('login-screen');
+            }
+        }
+
+        document.getElementById('adoption-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('alien-name').value.trim();
+            if (!nombre) return alert("Ponle un nombre a tu alien");
+            const nuevoPet = { nombre, hambre: 80, energia: 80, felicidad: 80, muerto: false, tiempo: 0 };
+            currentUser.pets.push(nuevoPet);
+            saveUsers(loadUsers());
+            currentPet = nuevoPet;
+            showGame();
+        });
+
+        // ====================== JUEGO ======================
+        function checkDeath() {
+            if (mascota.muerto) return;
+            let deadCount = 0;
+            if (mascota.hambre <= 0) deadCount++;
+            if (mascota.energia <= 0) deadCount++;
+            if (mascota.felicidad <= 0) deadCount++;
+            if (deadCount >= 2) {
+                mascota.muerto = true;
+                actualizarSprite();
+                actualizarBarras();
+                const deadOverlay = document.getElementById('dead-overlay');
+                if (deadOverlay) deadOverlay.classList.add('active');
+            }
+        }
+        function actualizarSprite() {
+            const sprite = document.getElementById('pet-sprite');
+            if (mascota.muerto) { sprite.src = "assets/sprites/alien-sad.png"; return; }
+            if (mascota.energia < 50) sprite.src = "assets/sprites/alien-sleepy.png";
+            else if (mascota.felicidad < 50) sprite.src = "assets/sprites/alien-sad.png";
+            else if (mascota.felicidad > 75) sprite.src = "assets/sprites/alien-happy.png";
+            else sprite.src = "assets/sprites/alien-idle.png";
+        }
+        function actualizarBarras() {
+            document.getElementById('hunger-bar').value = mascota.hambre;
+            document.getElementById('hunger-text').textContent = Math.round(mascota.hambre) + "%";
+            document.getElementById('energy-bar').value = mascota.energia;
+            document.getElementById('energy-text').textContent = Math.round(mascota.energia) + "%";
+            document.getElementById('happiness-bar').value = mascota.felicidad;
+            document.getElementById('happiness-text').textContent = Math.round(mascota.felicidad) + "%";
+        }
+        function gameLoop() {
+            if (statsPaused || mascota.muerto) return;
+            mascota.hambre = Math.max(0, mascota.hambre - 2.5);
+            mascota.energia = Math.max(0, mascota.energia - 3);
+            mascota.felicidad = Math.max(0, mascota.felicidad - 1.8);
+            actualizarBarras();
+            actualizarSprite();
+            checkDeath();
+        }
+
+        function alimentar() {
+            if (mascota.muerto) return;
+            mascota.hambre = Math.min(100, mascota.hambre + 28);
+            actualizarBarras();
+            actualizarSprite();
+        }
+        function dormir() {
+            if (mascota.muerto) return;
+            const overlay = document.getElementById('sleep-overlay');
+            overlay.classList.add('active');
+            const aumento = Math.min(100, mascota.energia + 30) - mascota.energia;
+            let paso = 0, pasos = 10, incremento = aumento / pasos;
+            const intervalo = setInterval(() => {
+                paso++;
+                mascota.energia = Math.min(100, mascota.energia + incremento);
+                actualizarBarras();
+                actualizarSprite();
+                if (paso >= pasos) {
+                    clearInterval(intervalo);
+                    setTimeout(() => overlay.classList.remove('active'), 600);
+                }
+            }, 250);
+        }
+
+        // ====================== PONG (AHORA 100% RESPONSIVE) ======================
+        let pongGameRunning = false;
+        let pongHits = 0;
+        let pongAnimationFrame = null;
+
+        function startPong() {
+            statsPaused = true;
+            const canvas = document.getElementById('pong-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // === ESCALADO RESPONSIVE ===
+            const maxWidth = Math.min(600, window.innerWidth * 0.92);
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * (400 / 600);
+
+            const scale = canvas.width / 600;
+
+            let ball = { x: 300 * scale, y: 200 * scale, radius: 10 * scale, dx: 5 * scale, dy: 3 * scale };
+            let playerPaddle = { x: 20 * scale, y: 170 * scale, width: 12 * scale, height: 90 * scale };
+            let aiPaddle = { x: canvas.width - 32 * scale, y: 170 * scale, width: 12 * scale, height: 90 * scale };
+
+            pongHits = 0;
+            document.getElementById('pong-modal').style.display = 'flex';
+            document.getElementById('pong-hits').textContent = `Golpes: ${pongHits}`;
+            pongGameRunning = true;
+            playMusic2();
+
+            const mouseMoveHandler = (e) => {
+                if (!pongGameRunning) return;
+                const rect = canvas.getBoundingClientRect();
+                playerPaddle.y = e.clientY - rect.top - playerPaddle.height / 2;
+                if (playerPaddle.y < 0) playerPaddle.y = 0;
+                if (playerPaddle.y > canvas.height - playerPaddle.height) playerPaddle.y = canvas.height - playerPaddle.height;
+            };
+            canvas.addEventListener('mousemove', mouseMoveHandler);
+
+            function pongLoop() {
+                if (!pongGameRunning) return;
+
+                ctx.fillStyle = '#0f380f';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = '#9bbc0f';
+                ctx.setLineDash([10, 10]);
+                ctx.beginPath();
+                ctx.moveTo(canvas.width/2, 0);
+                ctx.lineTo(canvas.width/2, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#9bbc0f';
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.width, playerPaddle.height);
+                ctx.fillRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height);
+
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) ball.dy = -ball.dy;
+
+                // Colisión jugador
+                if (ball.x - ball.radius < playerPaddle.x + playerPaddle.width && ball.x + ball.radius > playerPaddle.x &&
+                    ball.y > playerPaddle.y && ball.y < playerPaddle.y + playerPaddle.height && ball.dx < 0) {
+                    ball.dx = -ball.dx * 1.04;
+                    ball.x = playerPaddle.x + playerPaddle.width + ball.radius + 1;
+                    pongHits++;
+                    document.getElementById('pong-hits').textContent = `Golpes: ${pongHits}`;
+                }
+
+                // Colisión IA
+                if (ball.x + ball.radius > aiPaddle.x && ball.x - ball.radius < aiPaddle.x + aiPaddle.width &&
+                    ball.y > aiPaddle.y && ball.y < aiPaddle.y + aiPaddle.height && ball.dx > 0) {
+                    ball.dx = -ball.dx * 1.04;
+                    ball.x = aiPaddle.x - ball.radius - 1;
+                }
+
+                if (aiPaddle.y + aiPaddle.height / 2 < ball.y) aiPaddle.y += 6 * scale;
+                if (aiPaddle.y + aiPaddle.height / 2 > ball.y) aiPaddle.y -= 6 * scale;
+
+                if (ball.x - ball.radius < 0) { closePong(); return; }
+                if (ball.x + ball.radius > canvas.width) ball.dx = -ball.dx;
+
+                pongAnimationFrame = requestAnimationFrame(pongLoop);
+            }
+            pongLoop();
+        }
+
+        function closePong() {
+            statsPaused = false;
+            const modal = document.getElementById('pong-modal');
+            modal.style.display = 'none';
+            if (!mascota.muerto) mascota.felicidad = Math.min(100, mascota.felicidad + 30);
+            actualizarBarras();
+            actualizarSprite();
+            if (pongAnimationFrame) cancelAnimationFrame(pongAnimationFrame);
+            pongGameRunning = false;
+            playMusic1();
+        }
+
+        // Drag & Drop y botones (sin cambios)
+        const feedBtn = document.getElementById('feed-btn');
+        const petSprite = document.getElementById('pet-sprite');
+        feedBtn.addEventListener('dragstart', e => { if (mascota.muerto) return; e.dataTransfer.setData('text/plain', 'feed'); feedBtn.style.opacity = '0.5'; });
+        feedBtn.addEventListener('dragend', () => feedBtn.style.opacity = '1');
+        petSprite.addEventListener('dragover', e => { if (mascota.muerto) return; e.preventDefault(); petSprite.style.transform = 'scale(1.1)'; });
+        petSprite.addEventListener('dragleave', () => petSprite.style.transform = 'scale(1)');
+        petSprite.addEventListener('drop', e => {
+            if (mascota.muerto) return;
+            e.preventDefault();
+            petSprite.style.transform = 'scale(1)';
+            if (e.dataTransfer.getData('text/plain') === 'feed') alimentar();
+        });
+
+        document.getElementById('play-btn').addEventListener('click', () => {
+            if (mascota.muerto) return alert("💀 Este alien ha muerto y ya no se puede jugar.");
+            startPong();
+        });
+        document.getElementById('sleep-btn').addEventListener('click', () => {
+            if (mascota.muerto) return;
+            if (mascota.energia >= 98) return;
+            dormir();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setInterval(gameLoop, 2500);
+        });
+    </script>
+</body>
+</html>
