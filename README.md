@@ -23,6 +23,7 @@ Proyecto de **Single Page Application** estilo Tamagotchi retro (GameBoy) realiz
 ## Enlaces
 - **🎮 Jugar online**: [https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/](https://donrrreguera.github.io/aliengotchi-rubenreguerajimenez/)
 - **Repositorio GitHub**: [https://github.com/donrrreguera/aliengotchi-rubenreguerajimenez](https://github.com/donrrreguera/aliengotchi-rubenreguerajimenez)
+- **Tablero Kanban**: [Ver en Trello](https://trello.com/b/6a02d47acd1e6bd38cf0090a/aliengotchi-rubenreguerajimenez)
 
 ## Metodología de trabajo
 - 4 Sprints de 10 horas cada uno
